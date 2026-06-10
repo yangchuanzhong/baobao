@@ -1,9 +1,14 @@
 const STORAGE_KEY = "dual-schedule-data-v1";
 const DEFAULT_PASSWORD = "1234";
+const SUPABASE_TABLE = "schedule_state";
+const SUPABASE_ROW_ID = "main";
+const SUPABASE_CONFIG = window.SUPABASE_CONFIG || {};
 
 const state = {
   monthCursor: new Date(),
-  data: loadData(),
+  data: createDefaultData(),
+  remoteReady: false,
+  remoteError: "",
 };
 
 const elements = {
@@ -22,6 +27,7 @@ const elements = {
   nextMonthButton: document.querySelector("#nextMonthButton"),
   todayButton: document.querySelector("#todayButton"),
   currentMonthLabel: document.querySelector("#currentMonthLabel"),
+  storageStatus: document.querySelector("#storageStatus"),
   personOneName: document.querySelector("#personOneName"),
   personTwoName: document.querySelector("#personTwoName"),
   personSelect: document.querySelector("#personSelect"),
@@ -34,9 +40,12 @@ const elements = {
 
 init();
 
-function init() {
+async function init() {
   state.monthCursor.setDate(1);
   bindEvents();
+  state.data = loadLocalData();
+  await loadRemoteData();
+  startRemoteRefresh();
 
   showLogin();
 }
@@ -237,34 +246,143 @@ function renderCalendar() {
   elements.calendarGrid.replaceChildren(...cells);
 }
 
-function loadData() {
+function createDefaultData() {
+  return {
+    password: DEFAULT_PASSWORD,
+    people: [{ name: "第一位" }, { name: "第二位" }],
+    shifts: [],
+  };
+}
+
+function loadLocalData() {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (!saved) {
-    return {
-      password: DEFAULT_PASSWORD,
-      people: [{ name: "第一位" }, { name: "第二位" }],
-      shifts: [],
-    };
+    return createDefaultData();
   }
 
   try {
-    const data = JSON.parse(saved);
-    return {
-      password: data.password || DEFAULT_PASSWORD,
-      people: Array.isArray(data.people) && data.people.length >= 2 ? data.people.slice(0, 2) : [{ name: "第一位" }, { name: "第二位" }],
-      shifts: Array.isArray(data.shifts) ? data.shifts : [],
-    };
+    return normalizeData(JSON.parse(saved));
   } catch {
-    return {
-      password: DEFAULT_PASSWORD,
-      people: [{ name: "第一位" }, { name: "第二位" }],
-      shifts: [],
-    };
+    return createDefaultData();
   }
 }
 
 function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
+  saveRemoteData();
+}
+
+function normalizeData(data) {
+  const fallback = createDefaultData();
+  return {
+    password: data?.password || fallback.password,
+    people: Array.isArray(data?.people) && data.people.length >= 2 ? data.people.slice(0, 2) : fallback.people,
+    shifts: Array.isArray(data?.shifts) ? data.shifts : fallback.shifts,
+  };
+}
+
+function hasSupabaseConfig() {
+  return Boolean(SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey);
+}
+
+function supabaseHeaders(extra = {}) {
+  return {
+    apikey: SUPABASE_CONFIG.anonKey,
+    Authorization: `Bearer ${SUPABASE_CONFIG.anonKey}`,
+    "Content-Type": "application/json",
+    ...extra,
+  };
+}
+
+function supabaseUrl(query = "") {
+  const baseUrl = SUPABASE_CONFIG.url.replace(/\/$/, "");
+  return `${baseUrl}/rest/v1/${SUPABASE_TABLE}${query}`;
+}
+
+async function loadRemoteData() {
+  if (!hasSupabaseConfig()) {
+    updateStorageStatus();
+    return;
+  }
+
+  try {
+    const response = await fetch(supabaseUrl(`?id=eq.${SUPABASE_ROW_ID}&select=data`), {
+      headers: supabaseHeaders(),
+    });
+
+    if (!response.ok) throw new Error(`讀取資料庫失敗：${response.status}`);
+
+    const rows = await response.json();
+    if (rows[0]?.data) {
+      state.data = normalizeData(rows[0].data);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
+    } else {
+      await saveRemoteData();
+    }
+
+    state.remoteReady = true;
+    state.remoteError = "";
+  } catch (error) {
+    state.remoteReady = false;
+    state.remoteError = error.message;
+  }
+
+  updateStorageStatus();
+}
+
+function startRemoteRefresh() {
+  if (!hasSupabaseConfig()) return;
+
+  window.setInterval(async () => {
+    const appWasVisible = !elements.appScreen.hidden;
+    await loadRemoteData();
+    if (appWasVisible) {
+      syncPeopleInputs();
+      render();
+    }
+  }, 15000);
+}
+
+async function saveRemoteData() {
+  if (!hasSupabaseConfig()) {
+    updateStorageStatus();
+    return;
+  }
+
+  try {
+    const response = await fetch(supabaseUrl("?on_conflict=id"), {
+      method: "POST",
+      headers: supabaseHeaders({ Prefer: "resolution=merge-duplicates" }),
+      body: JSON.stringify({
+        id: SUPABASE_ROW_ID,
+        data: state.data,
+        updated_at: new Date().toISOString(),
+      }),
+    });
+
+    if (!response.ok) throw new Error(`儲存資料庫失敗：${response.status}`);
+
+    state.remoteReady = true;
+    state.remoteError = "";
+  } catch (error) {
+    state.remoteReady = false;
+    state.remoteError = error.message;
+  }
+
+  updateStorageStatus();
+}
+
+function updateStorageStatus() {
+  if (!elements.storageStatus) return;
+
+  if (!hasSupabaseConfig()) {
+    elements.storageStatus.textContent = "本機資料";
+    elements.storageStatus.title = "尚未設定 Supabase，資料只存在這個瀏覽器。";
+    return;
+  }
+
+  elements.storageStatus.textContent = state.remoteReady ? "資料庫同步" : "資料庫未連線";
+  elements.storageStatus.title = state.remoteError || "班表會同步到 Supabase。";
 }
 
 function toDateInputValue(date) {
