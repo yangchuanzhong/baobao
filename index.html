@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>baobao</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main id="loginScreen" class="login-screen">
+      <section class="login-panel" aria-labelledby="loginTitle">
+        <div>
+          <p class="eyebrow">Private Schedule</p>
+          <h1 id="loginTitle">baobao</h1>
+          <p class="muted">輸入密碼後查看與記錄兩個人的上班日期。</p>
+        </div>
+
+        <form id="loginForm" class="stack">
+          <label for="passwordInput">密碼</label>
+          <input id="passwordInput" type="password" autocomplete="current-password" placeholder="請輸入密碼" required />
+          <button type="submit">登入</button>
+          <p id="loginMessage" class="message" role="status"></p>
+        </form>
+      </section>
+    </main>
+
+    <main id="appScreen" class="app-shell" hidden>
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Work Calendar</p>
+          <h1>雙人班表</h1>
+        </div>
+        <div class="topbar-actions">
+          <button id="changePasswordButton" class="ghost" type="button">改密碼</button>
+          <button id="logoutButton" class="ghost" type="button">登出</button>
+        </div>
+      </header>
+
+      <section class="controls" aria-label="班表控制">
+        <button id="prevMonthButton" class="icon-button" type="button" aria-label="上一個月">‹</button>
+        <h2 id="currentMonthLabel"></h2>
+        <button id="nextMonthButton" class="icon-button" type="button" aria-label="下一個月">›</button>
+        <button id="todayButton" class="secondary" type="button">回到本月</button>
+      </section>
+
+      <section class="people-panel" aria-label="人員設定">
+        <label>
+          第一位
+          <input id="personOneName" type="text" maxlength="12" />
+        </label>
+        <label>
+          第二位
+          <input id="personTwoName" type="text" maxlength="12" />
+        </label>
+      </section>
+
+      <section class="add-shift-panel" aria-labelledby="addShiftTitle">
+        <h2 id="addShiftTitle">新增班次</h2>
+        <form id="shiftForm" class="shift-form">
+          <label>
+            人員
+            <select id="personSelect"></select>
+          </label>
+          <label>
+            日期
+            <input id="shiftDate" type="date" required />
+          </label>
+          <label>
+            班別
+            <select id="shiftType">
+              <option value="早班">早班</option>
+              <option value="中班">中班</option>
+              <option value="晚班">晚班</option>
+              <option value="休假">休假</option>
+              <option value="自訂">自訂</option>
+            </select>
+          </label>
+          <label>
+            備註
+            <input id="shiftNote" type="text" maxlength="24" placeholder="例如 09:00-18:00" />
+          </label>
+          <button type="submit">加入</button>
+        </form>
+      </section>
+
+      <section class="calendar-wrap" aria-label="班表月曆">
+        <div class="weekday-row">
+          <span>日</span>
+          <span>一</span>
+          <span>二</span>
+          <span>三</span>
+          <span>四</span>
+          <span>五</span>
+          <span>六</span>
+        </div>
+        <div id="calendarGrid" class="calendar-grid"></div>
+      </section>
+    </main>
+
+    <dialog id="passwordDialog">
+      <form id="passwordForm" method="dialog" class="dialog-body">
+        <h2>變更密碼</h2>
+        <label>
+          新密碼
+          <input id="newPasswordInput" type="password" minlength="4" autocomplete="new-password" required />
+        </label>
+        <menu>
+          <button id="cancelPasswordButton" class="ghost" type="button">取消</button>
+          <button type="submit">儲存</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>
