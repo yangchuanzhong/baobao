@@ -222,8 +222,12 @@ h2 {
 }
 
 .shift-form {
-  grid-template-columns: 1fr 1fr 1fr 1.4fr auto;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   align-items: end;
+}
+
+.shift-form button {
+  grid-column: 4;
 }
 
 .calendar-wrap {
@@ -381,6 +385,10 @@ menu {
   .people-panel,
   .shift-form {
     grid-template-columns: 1fr;
+  }
+
+  .shift-form button {
+    grid-column: auto;
   }
 
   .topbar {

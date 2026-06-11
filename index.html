@@ -67,6 +67,18 @@
             <input id="shiftDate" type="date" required />
           </label>
           <label>
+            店名
+            <input id="shiftStore" type="text" maxlength="20" placeholder="例如 A 店" />
+          </label>
+          <label>
+            開始時間
+            <input id="shiftStartTime" type="time" />
+          </label>
+          <label>
+            結束時間
+            <input id="shiftEndTime" type="time" />
+          </label>
+          <label>
             班別
             <select id="shiftType">
               <option value="早班">早班</option>
@@ -78,7 +90,7 @@
           </label>
           <label>
             備註
-            <input id="shiftNote" type="text" maxlength="24" placeholder="例如 09:00-18:00" />
+            <input id="shiftNote" type="text" maxlength="24" placeholder="其他補充" />
           </label>
           <button type="submit">加入</button>
         </form>
@@ -112,7 +124,7 @@
       </form>
     </dialog>
 
-    <script src="config.js?v=2"></script>
-    <script src="app.js?v=2"></script>
+    <script src="config.js?v=3"></script>
+    <script src="app.js?v=3"></script>
   </body>
 </html>

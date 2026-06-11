@@ -1,5 +1,5 @@
 const STORAGE_KEY = "dual-schedule-data-v1";
-const DEFAULT_PASSWORD = "1234";
+const DEFAULT_PASSWORD = "tin2004";
 const SUPABASE_TABLE = "schedule_state";
 const SUPABASE_ROW_ID = "main";
 const SUPABASE_CONFIG = window.SUPABASE_CONFIG || {};
@@ -33,6 +33,9 @@ const elements = {
   personSelect: document.querySelector("#personSelect"),
   shiftForm: document.querySelector("#shiftForm"),
   shiftDate: document.querySelector("#shiftDate"),
+  shiftStore: document.querySelector("#shiftStore"),
+  shiftStartTime: document.querySelector("#shiftStartTime"),
+  shiftEndTime: document.querySelector("#shiftEndTime"),
   shiftType: document.querySelector("#shiftType"),
   shiftNote: document.querySelector("#shiftNote"),
   calendarGrid: document.querySelector("#calendarGrid"),
@@ -156,18 +159,27 @@ function addShift(event) {
 
   const personIndex = Number(elements.personSelect.value);
   const type = elements.shiftType.value;
+  const storeName = elements.shiftStore.value.trim();
+  const startTime = elements.shiftStartTime.value;
+  const endTime = elements.shiftEndTime.value;
   const note = elements.shiftNote.value.trim();
 
   state.data.shifts.push({
     id: crypto.randomUUID(),
     date: elements.shiftDate.value,
     personIndex,
+    storeName,
+    startTime,
+    endTime,
     type,
     note,
   });
 
   state.data.shifts.sort((a, b) => a.date.localeCompare(b.date) || a.personIndex - b.personIndex);
   saveData();
+  elements.shiftStore.value = "";
+  elements.shiftStartTime.value = "";
+  elements.shiftEndTime.value = "";
   elements.shiftNote.value = "";
   render();
 }
@@ -226,7 +238,7 @@ function renderCalendar() {
 
       const text = document.createElement("span");
       text.className = "shift-text";
-      text.textContent = `${person.name}：${shift.type}${shift.note ? `｜${shift.note}` : ""}`;
+      text.textContent = formatShiftText(person.name, shift);
 
       const deleteButton = document.createElement("button");
       deleteButton.className = "delete-shift";
@@ -244,6 +256,19 @@ function renderCalendar() {
   }
 
   elements.calendarGrid.replaceChildren(...cells);
+}
+
+function formatShiftText(personName, shift) {
+  const parts = [personName];
+  const details = [];
+  const timeRange = shift.startTime && shift.endTime ? `${shift.startTime}-${shift.endTime}` : shift.startTime || shift.endTime || "";
+
+  if (shift.storeName) details.push(shift.storeName);
+  if (timeRange) details.push(timeRange);
+  if (shift.type) details.push(shift.type);
+  if (shift.note) details.push(shift.note);
+
+  return details.length ? `${parts[0]}：${details.join("｜")}` : parts[0];
 }
 
 function createDefaultData() {
@@ -277,7 +302,20 @@ function normalizeData(data) {
   return {
     password: data?.password || fallback.password,
     people: Array.isArray(data?.people) && data.people.length >= 2 ? data.people.slice(0, 2) : fallback.people,
-    shifts: Array.isArray(data?.shifts) ? data.shifts : fallback.shifts,
+    shifts: Array.isArray(data?.shifts) ? data.shifts.map(normalizeShift) : fallback.shifts,
+  };
+}
+
+function normalizeShift(shift) {
+  return {
+    id: shift.id || crypto.randomUUID(),
+    date: shift.date || toDateInputValue(new Date()),
+    personIndex: Number.isInteger(shift.personIndex) ? shift.personIndex : 0,
+    storeName: shift.storeName || "",
+    startTime: shift.startTime || "",
+    endTime: shift.endTime || "",
+    type: shift.type || "早班",
+    note: shift.note || "",
   };
 }
 
