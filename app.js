@@ -144,6 +144,7 @@ function updatePersonName(index, name) {
 }
 
 function updatePersonOptions() {
+  const selectedValue = elements.personSelect.value;
   elements.personSelect.replaceChildren(
     ...state.data.people.map((person, index) => {
       const option = document.createElement("option");
@@ -152,6 +153,10 @@ function updatePersonOptions() {
       return option;
     }),
   );
+
+  if ([...elements.personSelect.options].some((option) => option.value === selectedValue)) {
+    elements.personSelect.value = selectedValue;
+  }
 }
 
 function addShift(event) {
@@ -199,7 +204,9 @@ function renderHeader() {
   const year = state.monthCursor.getFullYear();
   const month = state.monthCursor.getMonth() + 1;
   elements.currentMonthLabel.textContent = `${year} 年 ${month} 月`;
-  elements.shiftDate.value = toDateInputValue(new Date(year, month - 1, new Date().getDate()));
+  if (!elements.shiftDate.value) {
+    elements.shiftDate.value = toDateInputValue(new Date(year, month - 1, new Date().getDate()));
+  }
 }
 
 function renderCalendar() {
