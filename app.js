@@ -381,7 +381,7 @@ function updateStorageStatus() {
     return;
   }
 
-  elements.storageStatus.textContent = state.remoteReady ? "資料庫同步" : "資料庫未連線";
+  elements.storageStatus.textContent = state.remoteReady ? "資料庫同步成功" : `資料庫未連線：${state.remoteError || "請檢查設定"}`;
   elements.storageStatus.title = state.remoteError || "班表會同步到 Supabase。";
 }
 
